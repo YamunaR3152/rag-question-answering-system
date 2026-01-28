@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+
+# Data files
+data/
+*.pdf
+*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# HuggingFace cache
+.cache/

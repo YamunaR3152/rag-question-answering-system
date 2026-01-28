@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RAG QA System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+
+<div class="bg-white shadow-xl rounded-2xl w-full max-w-3xl p-8 space-y-8">
+
+    <h1 class="text-3xl font-bold text-center text-gray-800">
+        📄 RAG Question Answering System
+    </h1>
+
+    <!-- Upload Section -->
+    <div class="space-y-3">
+        <h2 class="text-xl font-semibold text-gray-700">Upload Document</h2>
+        <input type="file" id="fileInput"
+               class="block w-full text-sm text-gray-600 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2">
+        <button onclick="uploadFile()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg">
+            Upload
+        </button>
+        <p id="uploadStatus" class="text-sm text-green-600"></p>
+        <p id="processingInfo" class="text-sm text-blue-600"></p>
+    </div>
+
+    <!-- Question Section -->
+    <div class="space-y-3">
+        <h2 class="text-xl font-semibold text-gray-700">Ask a Question</h2>
+        <textarea id="question" rows="3"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your question about the document..."></textarea>
+        <button onclick="askQuestion()"
+                class="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg">
+            Get Answer
+        </button>
+    </div>
+
+    <!-- Answer Section -->
+    <div id="answerBox" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-6">
+
+        <!-- ⭐ FINAL ANSWER -->
+        <div>
+            <h3 class="text-lg font-semibold text-gray-800">Answer</h3>
+            <p id="finalAnswer" class="text-gray-800 mt-2 whitespace-pre-wrap text-sm"></p>
+        </div>
+
+        <!-- 🔘 TOGGLE SOURCES BUTTON -->
+        <button onclick="toggleSources()" 
+                class="text-blue-600 text-sm underline">
+            🔍 Show Sources
+        </button>
+
+        <!-- 📚 RETRIEVED CHUNKS (HIDDEN BY DEFAULT) -->
+        <div id="sourcesContainer" class="hidden">
+            <h4 class="text-md font-semibold text-gray-700">Top Matching Chunks</h4>
+            <ul id="sources" class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-2"></ul>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let currentDocId = null;
+
+async function uploadFile() {
+    const fileInput = document.getElementById("fileInput");
+    if (!fileInput.files.length) {
+        alert("Please select a file first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const response = await fetch("/upload", { method: "POST", body: formData });
+    const result = await response.json();
+
+    currentDocId = result.document_id;
+
+    document.getElementById("uploadStatus").innerText = result.message;
+    checkProcessingStatus();
+}
+
+async function checkProcessingStatus() {
+    if (!currentDocId) return;
+
+    const response = await fetch(`/status/${currentDocId}`);
+    const result = await response.json();
+
+    if (result.status === "processing") {
+        document.getElementById("processingInfo").innerText =
+            "⏳ Processing document and building vector index...";
+        setTimeout(checkProcessingStatus, 2000);
+    } 
+    else if (result.status === "completed") {
+        document.getElementById("processingInfo").innerText =
+            `✅ Processing completed in ${result.time} seconds. You can now ask questions.`;
+    }
+    else if (result.status === "failed") {
+        document.getElementById("processingInfo").innerText =
+            "❌ Processing failed. Please try another file.";
+    }
+}
+
+async function askQuestion() {
+    const question = document.getElementById("question").value;
+
+    if (!question.trim()) {
+        alert("Please enter a question");
+        return;
+    }
+
+    const response = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: question })
+    });
+
+    const result = await response.json();
+
+    document.getElementById("answerBox").classList.remove("hidden");
+    document.getElementById("finalAnswer").textContent = result.answer;
+
+    const sourcesList = document.getElementById("sources");
+    sourcesList.innerHTML = "";
+
+    result.retrieved_context.forEach(chunk => {
+        const li = document.createElement("li");
+        li.innerText = chunk.substring(0, 200) + "...";
+        sourcesList.appendChild(li);
+    });
+}
+
+// 🔁 Toggle show/hide sources
+function toggleSources() {
+    const box = document.getElementById("sourcesContainer");
+    const btn = event.target;
+
+    box.classList.toggle("hidden");
+    btn.textContent = box.classList.contains("hidden") ? "🔍 Show Sources" : "🙈 Hide Sources";
+}
+</script>
+
+</body>
+</html>
