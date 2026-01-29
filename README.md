@@ -32,6 +32,17 @@ The pipeline follows these steps:
 9. LLM Answer Generation  
 
 This ensures answers are grounded in the uploaded document.
+## 🟢 Tech Stack
+
+The project uses the following technologies:
+
+- **FastAPI** – Backend API framework  
+- **HTML + Tailwind CSS** – Frontend user interface  
+- **Sentence Transformers** – For generating text embeddings  
+- **FAISS** – Vector database for similarity search  
+- **FLAN-T5** – Language model for answer generation  
+- **PyPDF2** – For extracting text from PDF documents  
+
 
 ---
 
